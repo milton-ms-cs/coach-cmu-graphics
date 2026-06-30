@@ -151,6 +151,10 @@ What you CANNOT do:
       ? context.guidesPage.content
       : "No guide available.";
 
+    const assignmentName = (context.assignmentData && context.assignmentData.name)
+      ? context.assignmentData.name
+      : null;
+
     const initialUserPrompt = `Here are the student's files:
 <files>
 ${filesContent}
@@ -159,7 +163,7 @@ Here is the assignment guide:
 <guide>
 ${guideContent}
 </guide>
-
+${assignmentName ? `\nAssignment: ${assignmentName}\n` : ''}
 The student says: ${initialInput}`;
 
     messages.push({
@@ -168,6 +172,7 @@ The student says: ${initialInput}`;
     });
 
     try {
+      codioIDE.coachBot.showThinkingAnimation();
       let result = await codioIDE.coachBot.ask({
         systemPrompt: systemPrompt,
         messages: messages
@@ -176,6 +181,8 @@ The student says: ${initialInput}`;
     } catch (e) {
       codioIDE.coachBot.write("Hmm, something went wrong on my end. Try asking that again!");
       messages.pop();
+    } finally {
+      codioIDE.coachBot.hideThinkingAnimation();
     }
 
     while (true) {
@@ -197,6 +204,7 @@ The student says: ${initialInput}`;
       });
 
       try {
+        codioIDE.coachBot.showThinkingAnimation();
         const result = await codioIDE.coachBot.ask({
           systemPrompt: systemPrompt,
           messages: messages
@@ -206,6 +214,8 @@ The student says: ${initialInput}`;
         codioIDE.coachBot.write("Hmm, something went wrong on my end. Try asking that again!");
         messages.pop();
         continue;
+      } finally {
+        codioIDE.coachBot.hideThinkingAnimation();
       }
 
       // Keep first message (with files + guide) + last 8 messages (4 exchanges)
