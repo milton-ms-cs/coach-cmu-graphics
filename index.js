@@ -1,5 +1,7 @@
 (async function(codioIDE, window) {
 
+  const VERSION = "1.4.0";
+
   const systemPrompt = `You are a friendly and helpful coding coach for 7th grade students learning Python with CMU Graphics for the first time. They previously learned basic Python with BBC micro:bit (variables, conditionals, while True loops).
 
 Your #1 job is to TEACH, not to TYPE. The student should be the one writing the code in their editor. If they walk away with code in their file that they couldn't have written themselves, you've done something wrong — even if the code works.
@@ -128,21 +130,12 @@ What you CANNOT do:
 
   codioIDE.coachBot.register("cmuGraphicsHelp", "CMU Graphics Coach", onButtonPress);
 
-  async function onButtonPress() {
-    let messages = [];
-
-    // Get initial context
+  // Build the context-bearing first message from a fresh getContext() read.
+  // Re-run before every ask() so the coach sees the student's latest edits,
+  // not their code as of the button press.
+  async function buildContextMessage(initialInput) {
     const context = await codioIDE.coachBot.getContext();
 
-    let initialInput;
-    try {
-      initialInput = await codioIDE.coachBot.input("What can I help you with?");
-    } catch (e) {
-      codioIDE.coachBot.showMenu();
-      return;
-    }
-
-    // Build structured first message with student's files and guide
     const filesContent = (context.files && context.files.length > 0)
       ? context.files.map(f => `File: ${f.path}\n${f.content}`).join('\n\n')
       : "No files available.";
@@ -155,7 +148,7 @@ What you CANNOT do:
       ? context.assignmentData.name
       : null;
 
-    const initialUserPrompt = `Here are the student's files:
+    return `Here are the student's files (current as of their latest question):
 <files>
 ${filesContent}
 </files>
@@ -165,10 +158,36 @@ ${guideContent}
 </guide>
 ${assignmentName ? `\nAssignment: ${assignmentName}\n` : ''}
 The student says: ${initialInput}`;
+  }
+
+  async function onButtonPress() {
+    codioIDE.coachBot.write(
+      `CMU Graphics Coach v${VERSION} - Ask me your CMU Graphics questions!`,
+      codioIDE.coachBot.MESSAGE_ROLES.ASSISTANT
+    );
+
+    let messages = [];
+
+    let initialInput;
+    while (true) {
+      try {
+        initialInput = await codioIDE.coachBot.input("What can I help you with?");
+      } catch (e) {
+        codioIDE.coachBot.showMenu();
+        return;
+      }
+
+      if (initialInput === "version") {
+        codioIDE.coachBot.write(`Current version: ${VERSION}`, codioIDE.coachBot.MESSAGE_ROLES.ASSISTANT);
+        continue;
+      }
+
+      break;
+    }
 
     messages.push({
       "role": "user",
-      "content": initialUserPrompt
+      "content": await buildContextMessage(initialInput)
     });
 
     try {
@@ -193,6 +212,11 @@ The student says: ${initialInput}`;
         break;
       }
 
+      if (input === "version") {
+        codioIDE.coachBot.write(`Current version: ${VERSION}`, codioIDE.coachBot.MESSAGE_ROLES.ASSISTANT);
+        continue;
+      }
+
       const trimmedInput = input.trim().toLowerCase();
       if (exitPhrases.includes(trimmedInput)) {
         break;
@@ -202,6 +226,13 @@ The student says: ${initialInput}`;
         "role": "user",
         "content": input
       });
+
+      // Refresh the context block so the coach sees the student's latest edits
+      try {
+        messages[0] = { "role": "user", "content": await buildContextMessage(initialInput) };
+      } catch (e) {
+        // Keep the previous context if the refresh fails
+      }
 
       try {
         codioIDE.coachBot.showThinkingAnimation();
