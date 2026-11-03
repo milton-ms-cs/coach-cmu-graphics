@@ -32,4 +32,4 @@ node --check index.js
 
 ## Strict mode
 
-If a workspace's own `.coach-log.json` shows a student leaning on the coach (many questions, or a run of "next step" asks), the coach adds a short "try first" nudge to its instructions. It still helps with every question and never mentions the mode. Sessions record `strict`, `strictReason` and `strictReleased`; the thresholds are named constants near the top of the strict-mode block in `index.js`.
+If a workspace's own `.coach-log.json` shows a student leaning on the coach (many questions, or a run of "next step" asks), the coach adds a short "try first" nudge to its instructions. It still helps with every question and never mentions the mode. Sessions record `strict`, `strictReason` and `strictReleased`; the thresholds are named constants near the top of the strict-mode block in `index.js`. The log lives in that one assignment's workspace, so strict mode only reflects how the student used this coach on this assignment, never their other assignments.
