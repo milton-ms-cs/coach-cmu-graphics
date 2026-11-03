@@ -30,6 +30,6 @@ Each coach session adds a short summary to a hidden `.coach-log.json` file in th
 node --check index.js
 ```
 
-## Strict mode
+## Try-first help (strict mode)
 
-If a workspace's own `.coach-log.json` shows a student leaning on the coach (many questions, or a run of "next step" asks), the coach adds a short "try first" nudge to its instructions. It still helps with every question and never mentions the mode. Sessions record `strict`, `strictReason` and `strictReleased`; the thresholds are named constants near the top of the strict-mode block in `index.js`. The log lives in that one assignment's workspace, so strict mode only reflects how the student used this coach on this assignment, never their other assignments.
+The model labels each student message (`[[ask]]` for wanting the next step or a check, `[[attempt]]` for their own try, `[[other]]`) with a hidden tag line at the start of its reply. The coach calls `ask()` with `stream: false`, hides the tag from the student, and keeps it in the chat history. The code decides which help each label gets from the labels in this box's own `.coach-log.json` (this coach, last 14 days): try-first help starts when a message would be the third ask in the last five since their last attempt, stays on until an attempt, and is forced at 10 questions in one session. The model is told this in a `<recent_questions>` block before it replies. Try-first help is gentle: it still helps with every question and never mentions a mode. Sessions record `labels`, `modes`, `strict`, `strictReason` (`model` or `backstop`) and `strictReleased`. The log is per box, so nothing carries over between assignments.
